@@ -58,7 +58,7 @@ URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
 
 ```
 Inference check succeeded.
-  model: qwen2.5-coder:latest
+  model: qwen3.5-35b-a3b
   prompt: what's 2+2
   response: 2+2 equals 4.
   discovered_models: 5
