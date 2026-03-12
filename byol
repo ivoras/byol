@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Configure OpenCode to connect to an LLM inference provider (BYOD).
+Configure OpenCode to connect to an LLM inference provider (BYOL).
 Resolves URL from CLI argument or BYOL_OPENAPI_URL env var.
 """
 
@@ -174,7 +174,7 @@ def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Configure OpenCode to use a BYOD LLM inference provider.",
+        description="Configure OpenCode to use a BYOL LLM inference provider.",
         epilog="URL is taken from the argument, or from BYOL_OPENAPI_URL if not provided.",
     )
     parser.add_argument(
@@ -211,7 +211,7 @@ def main() -> None:
         config["provider"] = {}
     config["provider"]["byod"] = {
         "npm": "@ai-sdk/openai-compatible",
-        "name": "BYOD",
+        "name": "BYOL",
         "options": {
             "baseURL": url,
         },
