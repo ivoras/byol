@@ -41,17 +41,17 @@ def read_config(path: Path) -> dict:
     try:
         data = path.read_text(encoding="utf-8")
     except OSError as e:
-        print(f"Error: Could not read {path}: {e}", file=sys.stderr)
+        print(f"Error: Could not read {path}: {e!r}", file=sys.stderr)
         sys.exit(1)
 
     try:
         loaded = json.loads(data)
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in {path}: {e}", file=sys.stderr)
+        print(f"Error: Invalid JSON in {path}: {e!r}", file=sys.stderr)
         sys.exit(1)
     if not isinstance(loaded, dict):
         print(
-            f"Error: Expected top-level JSON object in {path}, got {type(loaded).__name__}.",
+            f"Error: Expected top-level JSON object in {path}, got {type(loaded).__name__!r}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -101,11 +101,11 @@ def request_json(
             return json.loads(body)
     except error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {exc.code} from {url}: {body}") from exc
+        raise RuntimeError(f"HTTP {exc.code} from {url}: {body!r}") from exc
     except error.URLError as exc:
-        raise RuntimeError(f"Failed to reach {url}: {exc.reason}") from exc
+        raise RuntimeError(f"Failed to reach {url}: {exc.reason!r}") from exc
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Non-JSON response from {url}") from exc
+        raise RuntimeError(f"Non-JSON response from {url}: {exc!r}") from exc
 
 
 def discover_models(base_url: str, headers: dict[str, str]) -> dict[str, dict]:
@@ -131,8 +131,15 @@ def discover_models(base_url: str, headers: dict[str, str]) -> dict[str, dict]:
     )
 
 
-def extract_message_text(response: dict) -> str:
-    """Extract assistant text from OpenAI-compatible chat completion output."""
+def extract_message_text(response: dict) -> str:  # noqa: ANN202
+    """Extract assistant text from OpenAI-compatible chat completion output.
+
+    Args:
+        response: Chat completion response dict from API.
+
+    Returns:
+        Extracted message content as string, or empty string if not found.
+    """
     choices = response.get("choices")
     if not isinstance(choices, list) or not choices:
         return ""
