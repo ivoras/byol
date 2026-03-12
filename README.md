@@ -2,9 +2,9 @@
 
 Bring Your Own LLM (into a SSH session with OpenCode).
 
-## byod
+## byol
 
-`byod` is a single-file Python script that configures [OpenCode](https://opencode.ai) to connect to an OpenAI-compatible LLM inference provider. It writes the provider configuration to `~/.config/opencode/opencode.json`.
+`byol` is a single-file Python script that configures [OpenCode](https://opencode.ai) to connect to an OpenAI-compatible LLM inference provider. It writes the provider configuration to `~/.config/opencode/opencode.json`.
 
 ### Requirements
 
@@ -16,14 +16,14 @@ Bring Your Own LLM (into a SSH session with OpenCode).
 **With a URL argument:**
 
 ```bash
-python byod https://api.example.com/v1
+python byol https://api.example.com/v1
 ```
 
 **With environment variable (fallback when no argument is given):**
 
 ```bash
 export BYOL_OPENAPI_URL=https://api.example.com/v1
-python byod
+python byol
 ```
 
 URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
@@ -59,14 +59,14 @@ ssh \
 Then on the remote host:
 
 ```bash
-python byod
+python byol
 ```
 
 How this works:
 
 - `-R 127.0.0.1:18080:127.0.0.1:11434` exposes your local LLM port to the remote
   host as `127.0.0.1:18080`
-- `-o SetEnv=...` sets `BYOL_OPENAPI_URL` in the SSH session so `byod` picks it
+- `-o SetEnv=...` sets `BYOL_OPENAPI_URL` in the SSH session so `byol` picks it
   up automatically
 
 Notes:
