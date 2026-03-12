@@ -97,17 +97,24 @@ def request_json(
         raise RuntimeError(f"Non-JSON response from {url}") from exc
 
 
-def discover_model(base_url: str, headers: dict[str, str]) -> str:
-    """Try to discover an available model from /models."""
+def discover_models(base_url: str, headers: dict[str, str]) -> dict[str, dict]:
+    """Discover available models from /models in OpenCode config format."""
     models_url = f"{base_url.rstrip('/')}/models"
     data = request_json(models_url, headers=headers)
     models = data.get("data")
+    discovered: dict[str, dict] = {}
     if isinstance(models, list):
         for item in models:
             if isinstance(item, dict):
                 model_id = item.get("id")
                 if isinstance(model_id, str) and model_id.strip():
-                    return model_id
+                    entry: dict[str, str] = {}
+                    model_name = item.get("name")
+                    if isinstance(model_name, str) and model_name.strip():
+                        entry["name"] = model_name.strip()
+                    discovered[model_id] = entry
+    if discovered:
+        return discovered
     raise RuntimeError(
         "Could not discover a model from /models. Set BYOL_OPENAPI_MODEL to a valid model ID."
     )
@@ -139,16 +146,17 @@ def extract_message_text(response: dict) -> str:
     return ""
 
 
-def verify_inference(base_url: str) -> tuple[str, str]:
+def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
     """
     Verify endpoint accessibility by running a simple inference.
 
-    Returns (model_id, assistant_reply).
+    Returns (model_id, assistant_reply, discovered_models).
     """
     headers = build_headers()
+    discovered_models = discover_models(base_url, headers)
     model = os.environ.get("BYOL_OPENAPI_MODEL")
     if not model:
-        model = discover_model(base_url, headers)
+        model = next(iter(discovered_models))
 
     chat_url = f"{base_url.rstrip('/')}/chat/completions"
     payload = {
@@ -161,7 +169,7 @@ def verify_inference(base_url: str) -> tuple[str, str]:
     reply = extract_message_text(response)
     if not reply:
         raise RuntimeError("Inference call succeeded but no text reply was returned.")
-    return model, reply
+    return model, reply, discovered_models
 
 
 def main() -> None:
@@ -186,11 +194,12 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        model, answer = verify_inference(url)
+        model, answer, discovered_models = verify_inference(url)
         print("Inference check succeeded.")
         print(f"  model: {model}")
         print("  prompt: what's 2+2")
         print(f"  response: {answer}")
+        print(f"  discovered_models: {len(discovered_models)}")
     except RuntimeError as exc:
         print(f"Error: Inference pre-check failed: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -206,6 +215,7 @@ def main() -> None:
         "options": {
             "baseURL": url,
         },
+        "models": discovered_models,
     }
 
     write_config(config_path, config)
