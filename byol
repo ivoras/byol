@@ -209,7 +209,7 @@ def main() -> None:
 
     if "provider" not in config:
         config["provider"] = {}
-    config["provider"]["byod"] = {
+    config["provider"]["byol"] = {
         "npm": "@ai-sdk/openai-compatible",
         "name": "BYOL",
         "options": {
@@ -219,7 +219,7 @@ def main() -> None:
     }
 
     write_config(config_path, config)
-    print(f"Configured provider 'byod' at {config_path}")
+    print(f"Configured provider 'byol' at {config_path}")
     print(f"  baseURL: {url}")
 
 
