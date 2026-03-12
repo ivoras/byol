@@ -11,6 +11,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from urllib import error, request
 from urllib.parse import urlparse
 
 
@@ -54,6 +55,115 @@ def write_config(path: Path, config: dict) -> None:
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
+def build_headers() -> dict[str, str]:
+    """Build request headers for OpenAI-compatible HTTP calls."""
+    headers = {"Content-Type": "application/json"}
+    api_key = os.environ.get("BYOL_OPENAPI_KEY") or os.environ.get("OPENAI_API_KEY")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
+
+
+def request_json(
+    url: str,
+    *,
+    method: str = "GET",
+    payload: dict | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: float = 20.0,
+) -> dict:
+    """Perform an HTTP request and return parsed JSON response."""
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+
+    req = request.Request(
+        url=url,
+        data=data,
+        headers=headers or {},
+        method=method,
+    )
+
+    try:
+        with request.urlopen(req, timeout=timeout) as resp:
+            body = resp.read().decode("utf-8")
+            return json.loads(body)
+    except error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code} from {url}: {body}") from exc
+    except error.URLError as exc:
+        raise RuntimeError(f"Failed to reach {url}: {exc.reason}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Non-JSON response from {url}") from exc
+
+
+def discover_model(base_url: str, headers: dict[str, str]) -> str:
+    """Try to discover an available model from /models."""
+    models_url = f"{base_url.rstrip('/')}/models"
+    data = request_json(models_url, headers=headers)
+    models = data.get("data")
+    if isinstance(models, list):
+        for item in models:
+            if isinstance(item, dict):
+                model_id = item.get("id")
+                if isinstance(model_id, str) and model_id.strip():
+                    return model_id
+    raise RuntimeError(
+        "Could not discover a model from /models. Set BYOL_OPENAPI_MODEL to a valid model ID."
+    )
+
+
+def extract_message_text(response: dict) -> str:
+    """Extract assistant text from OpenAI-compatible chat completion output."""
+    choices = response.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first = choices[0]
+    if not isinstance(first, dict):
+        return ""
+    message = first.get("message")
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            text = item.get("text")
+            if isinstance(text, str):
+                parts.append(text)
+        return "\n".join(parts).strip()
+    return ""
+
+
+def verify_inference(base_url: str) -> tuple[str, str]:
+    """
+    Verify endpoint accessibility by running a simple inference.
+
+    Returns (model_id, assistant_reply).
+    """
+    headers = build_headers()
+    model = os.environ.get("BYOL_OPENAPI_MODEL")
+    if not model:
+        model = discover_model(base_url, headers)
+
+    chat_url = f"{base_url.rstrip('/')}/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": "what's 2+2"}],
+        "temperature": 0,
+        "max_tokens": 16,
+    }
+    response = request_json(chat_url, method="POST", payload=payload, headers=headers)
+    reply = extract_message_text(response)
+    if not reply:
+        raise RuntimeError("Inference call succeeded but no text reply was returned.")
+    return model, reply
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Configure OpenCode to use a BYOD LLM inference provider.",
@@ -73,6 +183,16 @@ def main() -> None:
             "Error: No valid URL provided. Pass a URL as argument or set BYOL_OPENAPI_URL.",
             file=sys.stderr,
         )
+        sys.exit(1)
+
+    try:
+        model, answer = verify_inference(url)
+        print("Inference check succeeded.")
+        print(f"  model: {model}")
+        print("  prompt: what's 2+2")
+        print(f"  response: {answer}")
+    except RuntimeError as exc:
+        print(f"Error: Inference pre-check failed: {exc}", file=sys.stderr)
         sys.exit(1)
 
     config_path = get_config_path()
