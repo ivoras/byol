@@ -103,6 +103,14 @@ Notes:
 - If your local LLM uses a different port or path, adjust the URL and tunnel
   ports accordingly.
 
+#### PuTTY
+
+Virtually all ssh clients allow tunneling. In PuTTY, it's done like this:
+
+![PuTTY tunnel configuration](putty.png)
+
+(Don't forget to click the **Add** button and save the configured session!)
+
 ### Updating the model list.
 
 This tool can be called multiple time without breaking stuff. This is useful as
