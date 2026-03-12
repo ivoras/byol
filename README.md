@@ -105,13 +105,13 @@ Notes:
 
 #### PuTTY
 
-Virtually all ssh clients allow tunneling. In PuTTY, it's done like this:
+Virtually all ssh clients allow tunneling. In PuTTY, it's done like this (the screenshot shows tunneling port 1234 from my local machine and making it available as port 9991 on the remote server):
 
 ![PuTTY tunnel configuration](putty.png)
 
 (Don't forget to click the **Add** button and save the configured session!)
 
-### Updating the model list.
+### Updating the model list
 
 This tool can be called multiple time without breaking stuff. This is useful as
 each time, it will re-discover models and add them to the configuration files.
