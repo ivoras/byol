@@ -115,3 +115,26 @@ Virtually all ssh clients allow tunneling. In PuTTY, it's done like this (the sc
 
 This tool can be called multiple time without breaking stuff. This is useful as
 each time, it will re-discover models and add them to the configuration files.
+
+### Custom local inference providers
+
+The script works equally well just for configuring OpenCode with custom local inference
+providers that expose an OpenAI-compatible API endpoint (e.g., ollama, llama.cpp,
+vLLM, or any other compatible server). Just point it at your local provider's
+base URL and let `byol` discover the available models automatically.
+
+### Windows support
+
+The script runs on Windows without modification. Use Python 3.10+ installed via
+python.org, WinPython, or similar. Environment variables work the same way:
+
+```powershell
+$env:BYOL_OPENAPI_URL="http://localhost:1234/v1"
+python byol.py
+```
+
+Or pass the URL directly:
+
+```powershell
+python byol.py http://localhost:1234/v1
+```
