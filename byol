@@ -380,7 +380,7 @@ def main() -> None:
         print("Inference check succeeded.")
         print(f"  model: {model}")
         print("  prompt: what's 2+2")
-        print(f"  response: {answer}")
+        print(f"  response: {answer.replace(chr(10), chr(92)+chr(10))}")
         print(f"  discovered_models: {len(discovered_models)}")
     except RuntimeError as exc:
         print(f"Error: Inference pre-check failed: {exc}", file=sys.stderr)
