@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""
+Configure OpenCode to connect to an LLM inference provider (BYOD).
+Resolves URL from CLI argument or BYOL_OPENAPI_URL env var.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+
+def resolve_url(cli_arg: str | None) -> str | None:
+    """Resolve LLM URL from CLI arg or BYOL_OPENAPI_URL env var."""
+    for candidate in (cli_arg, os.environ.get("BYOL_OPENAPI_URL")):
+        if not candidate:
+            continue
+        s = candidate.strip()
+        if not s:
+            continue
+        try:
+            parsed = urlparse(s)
+            if parsed.scheme in ("http", "https") and parsed.netloc:
+                return s
+        except Exception:
+            pass
+    return None
+
+
+def get_config_path() -> Path:
+    """Return path to OpenCode global config file."""
+    return Path.home() / ".config" / "opencode" / "opencode.json"
+
+
+def read_config(path: Path) -> dict:
+    """Read existing config or return empty dict."""
+    if not path.exists():
+        return {}
+    try:
+        data = path.read_text(encoding="utf-8")
+        return json.loads(data)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in {path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def write_config(path: Path, config: dict) -> None:
+    """Write config to file with stable formatting."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Configure OpenCode to use a BYOD LLM inference provider.",
+        epilog="URL is taken from the argument, or from BYOL_OPENAPI_URL if not provided.",
+    )
+    parser.add_argument(
+        "url",
+        nargs="?",
+        default=None,
+        help="LLM API base URL (e.g. https://api.example.com/v1)",
+    )
+    args = parser.parse_args()
+
+    url = resolve_url(args.url)
+    if not url:
+        print(
+            "Error: No valid URL provided. Pass a URL as argument or set BYOL_OPENAPI_URL.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    config_path = get_config_path()
+    config = read_config(config_path)
+
+    if "provider" not in config:
+        config["provider"] = {}
+    config["provider"]["byod"] = {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "BYOD",
+        "options": {
+            "baseURL": url,
+        },
+    }
+
+    write_config(config_path, config)
+    print(f"Configured provider 'byod' at {config_path}")
+    print(f"  baseURL: {url}")
+
+
+if __name__ == "__main__":
+    main()
