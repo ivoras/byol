@@ -1,8 +1,8 @@
 # byol
 
-Bring Your Own LLM (into a SSH session with OpenCode).
+Bring Your Own LLM (into an SSH session with OpenCode).
 
-## byol
+## Overview
 
 `byol` is a single-file Python script that configures [OpenCode](https://opencode.ai) to connect to an OpenAI-compatible LLM inference provider. It writes the provider configuration to `~/.config/opencode/opencode.json`.
 
@@ -28,15 +28,30 @@ python byol
 
 URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
 
+### Environment variables
+
+- `BYOL_OPENAPI_URL`: fallback endpoint URL when no CLI URL argument is passed
+- `BYOL_OPENAPI_MODEL`: optional model ID override for the inference pre-check
+- `BYOL_OPENAPI_KEY`: preferred bearer token for provider API calls
+- `OPENAI_API_KEY`: fallback bearer token if `BYOL_OPENAPI_KEY` is unset
+
 ### What it does
 
+- Discovers models from `<baseURL>/models`
+- Runs a pre-write inference check against `<baseURL>/chat/completions`
 - Adds or updates the `provider.byol` entry in `~/.config/opencode/opencode.json`
 - Uses `@ai-sdk/openai-compatible` for OpenAI-compatible APIs (`/v1/chat/completions`)
 - Preserves existing config entries (e.g. other providers, model, autoupdate)
+- Fails safely without writing config if endpoint checks fail or config shape is invalid
 
 ### Example output
 
 ```
+Inference check succeeded.
+  model: qwen2.5-coder:latest
+  prompt: what's 2+2
+  response: 2+2 equals 4.
+  discovered_models: 5
 Configured provider 'byol' at /home/user/.config/opencode/opencode.json
   baseURL: https://api.example.com/v1
 ```

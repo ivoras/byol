@@ -23,12 +23,9 @@ def resolve_url(cli_arg: str | None) -> str | None:
         s = candidate.strip()
         if not s:
             continue
-        try:
-            parsed = urlparse(s)
-            if parsed.scheme in ("http", "https") and parsed.netloc:
-                return s
-        except Exception:
-            pass
+        parsed = urlparse(s)
+        if parsed.scheme in ("http", "https") and parsed.netloc:
+            return s
     return None
 
 
@@ -43,10 +40,22 @@ def read_config(path: Path) -> dict:
         return {}
     try:
         data = path.read_text(encoding="utf-8")
-        return json.loads(data)
+    except OSError as e:
+        print(f"Error: Could not read {path}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        loaded = json.loads(data)
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON in {path}: {e}", file=sys.stderr)
         sys.exit(1)
+    if not isinstance(loaded, dict):
+        print(
+            f"Error: Expected top-level JSON object in {path}, got {type(loaded).__name__}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return loaded
 
 
 def write_config(path: Path, config: dict) -> None:
@@ -87,6 +96,8 @@ def request_json(
     try:
         with request.urlopen(req, timeout=timeout) as resp:
             body = resp.read().decode("utf-8")
+            if not body.strip():
+                raise RuntimeError(f"Empty response from {url}")
             return json.loads(body)
     except error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
@@ -207,9 +218,19 @@ def main() -> None:
     config_path = get_config_path()
     config = read_config(config_path)
 
-    if "provider" not in config:
-        config["provider"] = {}
-    config["provider"]["byol"] = {
+    provider = config.get("provider")
+    if provider is None:
+        provider = {}
+        config["provider"] = provider
+    elif not isinstance(provider, dict):
+        print(
+            "Error: Existing OpenCode config has non-object 'provider'; "
+            "refusing to overwrite it.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    provider["byol"] = {
         "npm": "@ai-sdk/openai-compatible",
         "name": "BYOL",
         "options": {
