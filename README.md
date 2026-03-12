@@ -92,3 +92,8 @@ Notes:
   should exist in that config file.
 - If your local LLM uses a different port or path, adjust the URL and tunnel
   ports accordingly.
+
+### Updating the model list.
+
+This tool can be called multiple time without breaking stuff. This is useful as
+each time, it will re-discover models and add them to the configuration files.
