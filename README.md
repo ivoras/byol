@@ -30,14 +30,14 @@ URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
 
 ### What it does
 
-- Adds or updates the `provider.byod` entry in `~/.config/opencode/opencode.json`
+- Adds or updates the `provider.byol` entry in `~/.config/opencode/opencode.json`
 - Uses `@ai-sdk/openai-compatible` for OpenAI-compatible APIs (`/v1/chat/completions`)
 - Preserves existing config entries (e.g. other providers, model, autoupdate)
 
 ### Example output
 
 ```
-Configured provider 'byod' at /home/user/.config/opencode/opencode.json
+Configured provider 'byol' at /home/user/.config/opencode/opencode.json
   baseURL: https://api.example.com/v1
 ```
 
