@@ -6,6 +6,16 @@ Bring Your Own LLM (into an SSH session with OpenCode).
 
 `byol` is a single-file Python script that configures [OpenCode](https://opencode.ai) to connect to an OpenAI-compatible LLM inference provider. It writes the provider configuration to `~/.config/opencode/opencode.json`.
 
+The intended workflow is:
+
+- You want opencode to work on a remote server, but with the model you're running on your local machine.
+- You set up SSH to tunnel your localhost LLM HTTP server to the remote server (see instructions below)
+- On the remote server, you
+  - [install opencode](https://opencode.ai/docs/#install)
+  - Copy / clone the `byol` script
+  - Run the `byol` script either by seting up an env var (possibly through SSH), or by passing it the tunnelled LLM URL on the CLI
+  - Start `opencode`, configure the provider and model to use (via the `/models` command)
+
 ### Requirements
 
 - Python 3.10+
