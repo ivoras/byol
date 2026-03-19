@@ -237,12 +237,24 @@ def main() -> None:
         )
         sys.exit(1)
 
+    byol_provider = provider.get("byol", {})
+    existing_options = byol_provider.get("options", {})
+    
+    options: dict[str, object] = {"baseURL": url}
+    if "timeout" not in existing_options:
+        options["timeout"] = 600000
+    else:
+        options["timeout"] = existing_options["timeout"]
+    
+    if "chunkTimeout" not in existing_options:
+        options["chunkTimeout"] = 600000
+    else:
+        options["chunkTimeout"] = existing_options["chunkTimeout"]
+    
     provider["byol"] = {
         "npm": "@ai-sdk/openai-compatible",
         "name": "BYOL",
-        "options": {
-            "baseURL": url,
-        },
+        "options": options,
         "models": discovered_models,
     }
 
