@@ -179,14 +179,15 @@ def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
     chat_url = f"{base_url.rstrip('/')}/chat/completions"
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": "what's 2+2"}],
+        "messages": [{"role": "user", "content": "what's 2+2? /nothink"}],
         "temperature": 0,
         "max_tokens": 16,
     }
     response = request_json(chat_url, method="POST", payload=payload, headers=headers)
     reply = extract_message_text(response)
     if not reply:
-        raise RuntimeError("Inference call succeeded but no text reply was returned.")
+        if not 'choices' in response:
+            raise RuntimeError("Inference call succeeded but no valid reply was returned.")
     return model, reply, discovered_models
 
 
