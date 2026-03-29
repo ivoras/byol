@@ -124,7 +124,7 @@ def request_json(
     method: str = "GET",
     payload: dict | None = None,
     headers: dict[str, str] | None = None,
-    timeout: float = 20.0,
+    timeout: float = 60.0,
 ) -> dict:
     """Perform an HTTP request and return parsed JSON response."""
     data = None
