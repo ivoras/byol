@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from urllib import error, request
 from urllib.parse import urlparse
@@ -62,7 +63,6 @@ def backup_config(path: Path) -> None:
     """Create timestamped backup of config file if it exists."""
     if not path.exists():
         return
-    from datetime import datetime
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = path.parent / f"{path.stem}_{timestamp}{path.suffix}"
@@ -172,7 +172,7 @@ def discover_models(base_url: str, headers: dict[str, str]) -> dict[str, dict]:
     if discovered:
         return discovered
     raise RuntimeError(
-        "Could not discover a model from /models. Set BYOL_OPENAPI_MODEL to a valid model ID."
+        "Could not discover models from /models endpoint. Check the URL and API key."
     )
 
 
@@ -230,9 +230,6 @@ def verify_inference(base_url: str, model_override: str | None = None) -> tuple[
     }
     response = request_json(chat_url, method="POST", payload=payload, headers=headers)
     reply = extract_message_text(response)
-    if not reply:
-        if not 'choices' in response:
-            raise RuntimeError("Inference call succeeded but no valid reply was returned.")
     return model, reply, discovered_models
 
 
@@ -364,9 +361,6 @@ def main() -> None:
         return
 
     url = resolve_url(args.url)
-
-
-if __name__ == "__main__":
     if not url:
         print(
             "Error: No valid URL provided. Pass a URL as argument or set BYOL_OPENAPI_URL.",
