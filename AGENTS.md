@@ -56,5 +56,8 @@ If any HTTP/discovery/inference step fails, the script exits non-zero and does n
 
 ## Git commit rules
 
-- Think about what the goals behind the diff-ed code are, and then: write an informative subject line, a blank line, and 1 or 2 sentences descibing the whys and goals behind the commit.
-- Add a blank line, and a very short heroic poem about the commit, in the style of the Iliad.
+Do not commit files without user's explicit instructions.
+
+- Think about what the goals behind the diff-ed code are, and then construct the commit message like this:
+  - write an informative subject line, a blank line, and 1 or 2 sentences descibing the whys and goals behind the commit.
+  - add a blank line, and a very short heroic poem about the commit, in the style of the Iliad.
