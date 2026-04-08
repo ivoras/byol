@@ -54,10 +54,24 @@ If any HTTP/discovery/inference step fails, the script exits non-zero and does n
 - No automatic model capability inference beyond available `id` and optional `name`.
 - No modifications outside `provider.byol` in OpenCode config.
 
-## Git commit rules
+## Git Commit Rules
 
 Do not commit files without user's explicit instructions.
 
-- Think about what the goals behind the diff-ed code are, and then construct the commit message like this:
-  - write an informative subject line, a blank line, and 1 or 2 sentences descibing the whys and goals behind the commit.
-  - add a blank line, and a very short heroic poem about the commit, in the style of the Iliad.
+When creating commits, follow this format exactly:
+
+1. **Subject line**: One concise sentence describing the change (≤50 chars)
+2. **Blank line**
+3. **Body**: 1-2 sentences explaining *why* the change was made (goals/motivation)
+4. **Blank line**
+5. **Heroic poem**: Exactly one quatrain (4 lines), rhyming AABB or ABAB, in Homeric/Iliad style with elevated diction
+
+Example:
+```
+Fix datetime import location and improve /models error message
+
+Move datetime import to module top for consistency and fix misleading error when endpoint returns no models.
+
+The import ascends to where it belongs,
+The error speaks truth without wrongs.
+```
