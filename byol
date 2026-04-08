@@ -58,10 +58,55 @@ def read_config(path: Path) -> dict:
     return loaded
 
 
+def backup_config(path: Path) -> None:
+    """Create timestamped backup of config file if it exists."""
+    if not path.exists():
+        return
+    from datetime import datetime
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = path.parent / f"{path.stem}_{timestamp}{path.suffix}"
+    try:
+        backup_path.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+    except OSError as e:
+        print(f"Warning: Could not create backup at {backup_path}: {e!r}", file=sys.stderr)
+
+
 def write_config(path: Path, config: dict) -> None:
     """Write config to file with stable formatting."""
+    backup_config(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+
+
+def show_providers_and_models(config_path: Path) -> None:
+    """Display configured providers and their models."""
+    if not config_path.exists():
+        print(f"No config found at {config_path}")
+        return
+    
+    config = read_config(config_path)
+    provider = config.get("provider", {})
+    
+    if not provider:
+        print("No providers configured")
+        return
+    
+    for name, data in sorted(provider.items()):
+        if isinstance(data, dict):
+            models = data.get("models", {})
+            model_count = len(models) if isinstance(models, dict) else 0
+            base_url = data.get("options", {}).get("baseURL", "N/A")
+            print(f"\n{name}:")
+            print(f"  baseURL: {base_url}")
+            print(f"  models: {model_count}")
+        else:
+            print(f"\n{name}: <non-object config>")
+
+
+def validate_config(config_path: Path) -> None:
+    """Validate and display configured providers and models."""
+    show_providers_and_models(config_path)
 
 
 def build_headers() -> dict[str, str]:
@@ -202,7 +247,17 @@ def main() -> None:
         default=None,
         help="LLM API base URL (e.g. https://api.example.com/v1)",
     )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Show configured providers and models without making changes",
+    )
     args = parser.parse_args()
+
+    if args.validate:
+        config_path = get_config_path()
+        validate_config(config_path)
+        return
 
     url = resolve_url(args.url)
     if not url:
