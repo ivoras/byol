@@ -366,30 +366,7 @@ def main() -> None:
     url = resolve_url(args.url)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Configure OpenCode to use a BYOL LLM inference provider.",
-        epilog="URL is taken from the argument, or from BYOL_OPENAPI_URL if not provided.",
-    )
-    parser.add_argument(
-        "url",
-        nargs="?",
-        default=None,
-        help="LLM API base URL (e.g. https://api.example.com/v1)",
-    )
-    parser.add_argument(
-        "--validate",
-        action="store_true",
-        help="Show configured providers and models without making changes",
-    )
-    args = parser.parse_args()
-
-    if args.validate:
-        config_path = get_config_path()
-        validate_config(config_path)
-        return
-
-    url = resolve_url(args.url)
+if __name__ == "__main__":
     if not url:
         print(
             "Error: No valid URL provided. Pass a URL as argument or set BYOL_OPENAPI_URL.",
