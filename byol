@@ -209,7 +209,7 @@ def extract_message_text(response: dict) -> str:  # noqa: ANN202
     return ""
 
 
-def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
+def verify_inference(base_url: str, model_override: str | None = None) -> tuple[str, str, dict[str, dict]]:
     """
     Verify endpoint accessibility by running a simple inference.
 
@@ -217,7 +217,7 @@ def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
     """
     headers = build_headers()
     discovered_models = discover_models(base_url, headers)
-    model = os.environ.get("BYOL_OPENAPI_MODEL")
+    model = model_override or os.environ.get("BYOL_OPENAPI_MODEL")
     if not model:
         model = next(iter(discovered_models))
 
@@ -234,6 +234,131 @@ def verify_inference(base_url: str) -> tuple[str, str, dict[str, dict]]:
         if not 'choices' in response:
             raise RuntimeError("Inference call succeeded but no valid reply was returned.")
     return model, reply, discovered_models
+
+
+def interactive_setup() -> None:
+    """Run interactive configuration setup."""
+    print("BYOL Interactive Setup")
+    print("=" * 40)
+
+    url = input("\nEnter API base URL (e.g., https://api.example.com/v1): ").strip()
+    while not resolve_url(url):
+        print("Error: Invalid URL. Must be http(s):// with a host.")
+        url = input("Enter API base URL: ").strip()
+
+    api_key = os.environ.get("BYOL_OPENAPI_KEY") or os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        api_key = input("Enter API key (or press Enter to skip): ").strip()
+    
+    if api_key:
+        os.environ["BYOL_OPENAPI_KEY"] = api_key
+
+    try:
+        model, answer, discovered_models = verify_inference(url)
+        print("\nInference check succeeded.")
+        print(f"  Model: {model}")
+        print(f"  Response: {answer}")
+        print(f"  Discovered models: {len(discovered_models)}")
+    except RuntimeError as exc:
+        print(f"\nError: Inference check failed: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if len(discovered_models) > 1:
+        print("\nAvailable models:")
+        for idx, (model_id, model_data) in enumerate(sorted(discovered_models.items()), 1):
+            name = model_data.get("name", model_id)
+            print(f"  {idx}. {model_id} ({name})")
+        
+        while True:
+            choice = input("\nSelect a model number (or Enter for default): ").strip()
+            if not choice:
+                break
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(discovered_models):
+                    selected_model = sorted(discovered_models.keys())[idx]
+                    os.environ["BYOL_OPENAPI_MODEL"] = selected_model
+                    print(f"Selected model: {selected_model}")
+                    break
+            except ValueError:
+                pass
+            print("Invalid selection.")
+
+    config_path = get_config_path()
+    config = read_config(config_path)
+
+    provider = config.get("provider")
+    if provider is None:
+        provider = {}
+        config["provider"] = provider
+    elif not isinstance(provider, dict):
+        print(
+            "Error: Existing OpenCode config has non-object 'provider'; "
+            "refusing to overwrite it.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    byol_provider = provider.get("byol", {})
+    existing_options = byol_provider.get("options", {})
+    
+    options: dict[str, object] = {"baseURL": url}
+    if "timeout" not in existing_options:
+        options["timeout"] = 600000
+    else:
+        options["timeout"] = existing_options["timeout"]
+    
+    if "chunkTimeout" not in existing_options:
+        options["chunkTimeout"] = 600000
+    else:
+        options["chunkTimeout"] = existing_options["chunkTimeout"]
+    
+    provider["byol"] = {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "BYOL",
+        "options": options,
+        "models": discovered_models,
+    }
+
+    write_config(config_path, config)
+    print(f"\nConfigured provider 'byol' at {config_path}")
+    print(f"  baseURL: {url}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Configure OpenCode to use a BYOL LLM inference provider.",
+        epilog="URL is taken from the argument, or from BYOL_OPENAPI_URL if not provided.",
+    )
+    parser.add_argument(
+        "url",
+        nargs="?",
+        default=None,
+        help="LLM API base URL (e.g. https://api.example.com/v1)",
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Show configured providers and models without making changes",
+    )
+    parser.add_argument(
+        "-i",
+        "--interactive",
+        action="store_true",
+        help="Run interactive configuration setup",
+    )
+    args = parser.parse_args()
+
+    if args.validate:
+        config_path = get_config_path()
+        validate_config(config_path)
+        return
+
+    if args.interactive:
+        interactive_setup()
+        return
+
+    url = resolve_url(args.url)
 
 
 def main() -> None:
