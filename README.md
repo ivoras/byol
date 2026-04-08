@@ -38,6 +38,14 @@ python byol
 
 URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
 
+**Interactive setup:**
+
+```bash
+python byol -i
+```
+
+Prompts for URL and API key, runs an inference check, displays discovered models with the tested model marked as default, and lets you select which model to use.
+
 ### Environment variables
 
 - `BYOL_OPENAPI_URL`: fallback endpoint URL when no CLI URL argument is passed
