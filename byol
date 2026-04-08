@@ -236,6 +236,46 @@ def verify_inference(base_url: str, model_override: str | None = None) -> tuple[
     return model, reply, discovered_models
 
 
+def save_provider_config(config_path: Path, url: str, discovered_models: dict[str, dict]) -> None:
+    """Save provider configuration to file."""
+    config = read_config(config_path)
+
+    provider = config.get("provider")
+    if provider is None:
+        provider = {}
+        config["provider"] = provider
+    elif not isinstance(provider, dict):
+        print(
+            "Error: Existing OpenCode config has non-object 'provider'; "
+            "refusing to overwrite it.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    byol_provider = provider.get("byol", {})
+    existing_options = byol_provider.get("options", {})
+    
+    options: dict[str, object] = {"baseURL": url}
+    if "timeout" not in existing_options:
+        options["timeout"] = 600000
+    else:
+        options["timeout"] = existing_options["timeout"]
+    
+    if "chunkTimeout" not in existing_options:
+        options["chunkTimeout"] = 600000
+    else:
+        options["chunkTimeout"] = existing_options["chunkTimeout"]
+    
+    provider["byol"] = {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "BYOL",
+        "options": options,
+        "models": discovered_models,
+    }
+
+    write_config(config_path, config)
+
+
 def interactive_setup() -> None:
     """Run interactive configuration setup."""
     print("BYOL Interactive Setup")
@@ -285,42 +325,7 @@ def interactive_setup() -> None:
             print("Invalid selection.")
 
     config_path = get_config_path()
-    config = read_config(config_path)
-
-    provider = config.get("provider")
-    if provider is None:
-        provider = {}
-        config["provider"] = provider
-    elif not isinstance(provider, dict):
-        print(
-            "Error: Existing OpenCode config has non-object 'provider'; "
-            "refusing to overwrite it.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    byol_provider = provider.get("byol", {})
-    existing_options = byol_provider.get("options", {})
-    
-    options: dict[str, object] = {"baseURL": url}
-    if "timeout" not in existing_options:
-        options["timeout"] = 600000
-    else:
-        options["timeout"] = existing_options["timeout"]
-    
-    if "chunkTimeout" not in existing_options:
-        options["chunkTimeout"] = 600000
-    else:
-        options["chunkTimeout"] = existing_options["chunkTimeout"]
-    
-    provider["byol"] = {
-        "npm": "@ai-sdk/openai-compatible",
-        "name": "BYOL",
-        "options": options,
-        "models": discovered_models,
-    }
-
-    write_config(config_path, config)
+    save_provider_config(config_path, url, discovered_models)
     print(f"\nConfigured provider 'byol' at {config_path}")
     print(f"  baseURL: {url}")
 
@@ -404,42 +409,7 @@ def main() -> None:
         sys.exit(1)
 
     config_path = get_config_path()
-    config = read_config(config_path)
-
-    provider = config.get("provider")
-    if provider is None:
-        provider = {}
-        config["provider"] = provider
-    elif not isinstance(provider, dict):
-        print(
-            "Error: Existing OpenCode config has non-object 'provider'; "
-            "refusing to overwrite it.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    byol_provider = provider.get("byol", {})
-    existing_options = byol_provider.get("options", {})
-    
-    options: dict[str, object] = {"baseURL": url}
-    if "timeout" not in existing_options:
-        options["timeout"] = 600000
-    else:
-        options["timeout"] = existing_options["timeout"]
-    
-    if "chunkTimeout" not in existing_options:
-        options["chunkTimeout"] = 600000
-    else:
-        options["chunkTimeout"] = existing_options["chunkTimeout"]
-    
-    provider["byol"] = {
-        "npm": "@ai-sdk/openai-compatible",
-        "name": "BYOL",
-        "options": options,
-        "models": discovered_models,
-    }
-
-    write_config(config_path, config)
+    save_provider_config(config_path, url, discovered_models)
     print(f"Configured provider 'byol' at {config_path}")
     print(f"  baseURL: {url}")
 
