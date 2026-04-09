@@ -224,7 +224,7 @@ def verify_inference(base_url: str, model_override: str | None = None) -> tuple[
     chat_url = f"{base_url.rstrip('/')}/chat/completions"
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": "what's 2+2? /nothink"}],
+        "messages": [{"role": "user", "content": "what's 2+2"}],
         "temperature": 0,
         "max_tokens": 16,
     }
@@ -250,18 +250,20 @@ def save_provider_config(config_path: Path, url: str, discovered_models: dict[st
         sys.exit(1)
 
     byol_provider = provider.get("byol", {})
-    existing_options = byol_provider.get("options", {})
     
     options: dict[str, object] = {"baseURL": url}
-    if "timeout" not in existing_options:
-        options["timeout"] = 600000
-    else:
-        options["timeout"] = existing_options["timeout"]
     
-    if "chunkTimeout" not in existing_options:
-        options["chunkTimeout"] = 600000
-    else:
-        options["chunkTimeout"] = existing_options["chunkTimeout"]
+    if isinstance(byol_provider, dict):
+        existing_options = byol_provider.get("options", {})
+        if isinstance(existing_options, dict):
+            if "timeout" in existing_options:
+                options["timeout"] = existing_options["timeout"]
+            else:
+                options["timeout"] = 600000
+            if "chunkTimeout" in existing_options:
+                options["chunkTimeout"] = existing_options["chunkTimeout"]
+            else:
+                options["chunkTimeout"] = 600000
     
     provider["byol"] = {
         "npm": "@ai-sdk/openai-compatible",
@@ -285,10 +287,9 @@ def interactive_setup() -> None:
 
     api_key = os.environ.get("BYOL_OPENAPI_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        api_key = input("Enter API key (or press Enter to skip): ").strip()
-    
-    if api_key:
-        os.environ["BYOL_OPENAPI_KEY"] = api_key
+        api_key_input = input("Enter API key (or press Enter to skip): ").strip()
+        if api_key_input:
+            os.environ["BYOL_OPENAPI_KEY"] = api_key_input
 
     try:
         model, answer, discovered_models = verify_inference(url)
