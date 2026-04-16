@@ -38,6 +38,14 @@ python byol
 
 URL resolution priority: command-line argument first, then `BYOL_OPENAPI_URL`.
 
+**Remove provider config:**
+
+```bash
+python byol --remove
+```
+
+Removes the `provider.byol` entry from OpenCode's config file without touching any other providers or settings.
+
 **Interactive setup:**
 
 ```bash

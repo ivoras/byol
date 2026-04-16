@@ -356,7 +356,24 @@ def main() -> None:
         action="store_true",
         help="Run interactive configuration setup",
     )
+    parser.add_argument(
+        "--remove",
+        action="store_true",
+        help="Remove the 'byol' provider from OpenCode config",
+    )
     args = parser.parse_args()
+
+    if args.remove:
+        config_path = get_config_path()
+        config = read_config(config_path)
+        provider = config.get("provider")
+        if isinstance(provider, dict) and "byol" in provider:
+            del provider["byol"]
+            write_config(config_path, config)
+            print(f"Removed 'byol' provider from {config_path}")
+        else:
+            print("'byol' provider not found in config; nothing to remove.")
+        return
 
     if args.validate:
         config_path = get_config_path()
